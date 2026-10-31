@@ -10,7 +10,7 @@
     "embed": "node embed.mjs dist ../panel/gen/Assets.scala"
   },
   "dependencies": {
-    "preact": "^10.29.8"
+    "preact": "^11.1.0"
   },
   "devDependencies": {
     "@preact/preset-vite": "^2.10.6",
