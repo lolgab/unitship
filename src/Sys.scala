@@ -112,6 +112,6 @@ object Files2 {
 
   def makeExecutable(path: Path): Unit = {
     import java.nio.file.attribute.PosixFilePermission.*
-    Files.setPosixFilePermissions(path, java.util.EnumSet.of(lolgab_READ, lolgab_WRITE, lolgab_EXECUTE, GROUP_READ, GROUP_EXECUTE, OTHERS_READ, OTHERS_EXECUTE))
+    Files.setPosixFilePermissions(path, java.util.EnumSet.of(OWNER_READ, OWNER_WRITE, OWNER_EXECUTE, GROUP_READ, GROUP_EXECUTE, OTHERS_READ, OTHERS_EXECUTE))
   }
 }
