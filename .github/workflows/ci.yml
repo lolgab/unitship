@@ -42,7 +42,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - uses: coursier/cache-action@v6
+      - uses: coursier/cache-action@v9
       - uses: coursier/setup-action@v1
         with:
           apps: scala-cli
@@ -57,7 +57,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - uses: coursier/cache-action@v6
+      - uses: coursier/cache-action@v9
       - uses: coursier/setup-action@v1
         with:
           apps: scala-cli
