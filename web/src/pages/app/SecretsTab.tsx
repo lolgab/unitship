@@ -121,6 +121,7 @@ function SecretModal({ name, existing, active, busy, onClose, onSave }: { name: 
   const isNew = name === ''
   const problem = key === '' ? null : !validKey(key) ? 'Letters, digits and “_”, not starting with a digit.' : reserved.has(key) ? `${key} is set by unitship.` : isNew && existing.includes(key) ? 'It exists: use Update.' : null
   const ok = key !== '' && problem === null
+  const valueProps = { value, onInput: (e: Event) => setValue((e.target as HTMLInputElement).value), autoComplete: 'off', spellcheck: false, autoFocus: !isNew }
 
   return (
     <Modal
@@ -149,7 +150,8 @@ function SecretModal({ name, existing, active, busy, onClose, onSave }: { name: 
         <label class="field">
           <span>Value</span>
           <div class="input-group">
-            <input type={visible ? 'text' : 'password'} value={value} onInput={(e) => setValue((e.target as HTMLInputElement).value)} autoComplete="off" spellcheck={false} autoFocus={!isNew} />
+            {/* Preact 11 types `type` as a union per kind of input, so a 'text' | 'password' expression does not fit */}
+            {visible ? <input type="text" {...valueProps} /> : <input type="password" {...valueProps} />}
             <button type="button" class="icon-btn" onClick={() => setVisible(!visible)} aria-label={visible ? 'Hide' : 'Show'}>
               <Icon name="eye" />
             </button>
