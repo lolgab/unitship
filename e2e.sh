@@ -26,7 +26,13 @@ cleanup() {
     [ -e "$pidfile" ] && kill "$(cat "$pidfile")" 2>/dev/null || true
   done
   kill "${loop_pid:-}" 2>/dev/null || true
-  rm -rf "$UNITSHIP_HOME" "$work"
+  # best effort: the edge may still be exiting (macOS), and a leftover temp dir must not fail the run
+  for _ in 1 2 3; do
+    chmod -R u+rwx "$UNITSHIP_HOME" "$work" 2>/dev/null || true
+    rm -rf "$UNITSHIP_HOME" "$work" 2>/dev/null && return 0
+    sleep 1
+  done
+  return 0
 }
 trap cleanup EXIT
 
