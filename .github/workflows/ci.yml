@@ -63,7 +63,7 @@ jobs:
         run: |
           scala-cli test panel/src/Crypto.scala panel/src/Json.scala panel/src/Auth.scala panel/src/Http.scala \
             panel/test/CryptoTests.test.scala panel/test/PanelTests.test.scala
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
