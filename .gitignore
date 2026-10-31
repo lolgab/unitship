@@ -1,0 +1,10 @@
+.scala-build/
+.bsp/
+.bloop/
+.metals/
+.scalino-build/
+.DS_Store
+dist/
+node_modules/
+web/dist/
+panel/gen/

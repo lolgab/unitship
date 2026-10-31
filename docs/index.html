@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>unitship: deploy SNUnit apps to your own server</title>
+<meta name="description" content="A small self-hosted platform for SNUnit and FreeUnit apps. git push or unitship deploy, zero downtime, HTTPS, no Docker.">
+<style>
+  :root { --bg:#fff; --fg:#1b1f24; --muted:#59636e; --accent:#0b6bcb; --code:#f3f5f7; --border:#d8dee4; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0d1117; --fg:#e6edf3; --muted:#8b949e; --accent:#58a6ff; --code:#161b22; --border:#30363d; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.6 system-ui,-apple-system,Segoe UI,sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 48px 16px 80px; }
+  h1 { font-size: 2.2rem; margin: 0 0 8px; }
+  h2 { margin-top: 2.5rem; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+  p.lead { font-size: 1.15rem; color: var(--muted); }
+  a { color: var(--accent); }
+  pre, code { background: var(--code); border-radius: 6px; font: 14px ui-monospace,SFMono-Regular,Menlo,monospace; }
+  code { padding: 2px 5px; }
+  pre { padding: 14px; overflow-x: auto; border: 1px solid var(--border); }
+  pre code { padding: 0; background: none; }
+  table { border-collapse: collapse; width: 100%; }
+  td { border-top: 1px solid var(--border); padding: 6px 8px; vertical-align: top; }
+  td:first-child { white-space: nowrap; }
+  nav a { margin-right: 16px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>unitship</h1>
+  <p class="lead">Deploy <a href="https://github.com/lolgab/snunit">SNUnit</a> and FreeUnit apps to your own server.
+  Zero-downtime releases, HTTPS, rollbacks, a web panel. One user, systemd, no Docker.</p>
+  <nav>
+    <a href="https://github.com/lolgab/unitship">GitHub</a>
+    <a href="https://github.com/lolgab/unitship/releases">Releases</a>
+    <a href="https://github.com/lolgab/unitship/blob/main/README.md">Full README</a>
+  </nav>
+
+  <h2>Install</h2>
+  <pre><code>curl -fsSL https://lolgab.github.io/unitship/install.sh | bash
+unitship --version</code></pre>
+  <p>Linux x86_64 and macOS arm64 binaries are on the releases page. Other platforms: build from source with
+  <code>scalino package vendor src -o unitship</code>.</p>
+
+  <h2>Quickstart</h2>
+  <pre><code># on the server, once (see the README for the root steps)
+unitship setup --email you@example.com --base-domain apps.example.com
+
+# from your machine
+unitship --host me@my-server create blog
+unitship --host me@my-server deploy blog ./blog      # executable built with `snunit package`
+unitship --host me@my-server tls blog                # Let's Encrypt</code></pre>
+
+  <h2>How it works</h2>
+  <ul>
+    <li>An SNUnit app is one executable that embeds its own <code>unitd</code>. Each release is a systemd user service on
+    <code>127.0.0.1:$PORT</code>.</li>
+    <li>An <em>edge</em> FreeUnit on ports 80/443 routes by <code>Host</code> to the active release and terminates TLS.</li>
+    <li>A deploy starts the new release, waits until healthy, atomically switches the edge, then stops the old one.
+    If the new release fails, nothing changes.</li>
+    <li>State is plain files in <code>~/.unitship</code>. Remote commands run over <code>ssh</code>; no other protocol.</li>
+  </ul>
+
+  <h2>Your app</h2>
+<pre><code>//&gt; using dep com.github.lolgab::snunit::0.13.0
+import snunit.*
+import snunit.config.*
+
+@main
+def run =
+  val address = s"${sys.env.getOrElse("BIND_ADDRESS", "*")}:${sys.env.getOrElse("PORT", "8080")}"
+  SyncServerBuilder
+    .setConfig(UnitConfig(listeners = Seq(Listener(address))))
+    .setRequestHandler(req =&gt; req.send(StatusCode.OK, "Hello world!\n", Headers.empty))
+    .build()
+    .listen()</code></pre>
+
+  <h2>Commands</h2>
+  <table>
+    <tr><td><code>create</code> / <code>destroy</code></td><td>manage apps</td></tr>
+    <tr><td><code>deploy</code></td><td>new release, live with no downtime</td></tr>
+    <tr><td><code>releases</code> / <code>rollback</code></td><td>last 5 releases are kept</td></tr>
+    <tr><td><code>config</code></td><td>environment; a change is a zero-downtime release</td></tr>
+    <tr><td><code>domains</code> / <code>tls</code></td><td>domains and Let's Encrypt certificates</td></tr>
+    <tr><td><code>git init</code></td><td>deploy with <code>git push</code></td></tr>
+    <tr><td><code>logs</code>, <code>ps</code>, <code>exec</code></td><td>operate</td></tr>
+  </table>
+
+  <h2>Limits</h2>
+  <p>One server. Isolation is that of a Unix user: don't host untrusted code. No bundled databases. HTTP/1.1 only.
+  See the <a href="https://github.com/lolgab/unitship#limits">README</a>.</p>
+
+  <h2>Contributing</h2>
+  <p>Apache 2.0. See <a href="https://github.com/lolgab/unitship/blob/main/CONTRIBUTING.md">CONTRIBUTING.md</a>.</p>
+</main>
+</body>
+</html>

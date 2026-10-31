@@ -1,0 +1,121 @@
+name: ci
+
+# Tests unitship (see README.md): the pure part on the JVM, and the whole tool end to end with the
+# real edge FreeUnit, on Linux and macOS and, on Linux, under systemd in a container.
+on:
+  push:
+    paths:
+      - "src/**"
+      - "test/**"
+      - "panel/**"
+      - "web/**"
+      - "vendor/**"
+      - "*.sh"
+      - ".github/workflows/ci.yml"
+  pull_request:
+    paths:
+      - "src/**"
+      - "test/**"
+      - "panel/**"
+      - "web/**"
+      - "vendor/**"
+      - "*.sh"
+      - ".github/workflows/ci.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  SCALINO_VERSION: v0.0.23
+
+jobs:
+  unit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: coursier/cache-action@v6
+      - uses: coursier/setup-action@v1
+        with:
+          apps: scala-cli
+      - run: scala-cli test src/Core.scala test/CoreTests.test.scala
+
+  panel:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: coursier/cache-action@v6
+      - uses: coursier/setup-action@v1
+        with:
+          apps: scala-cli
+      - name: The pure part of the panel
+        run: |
+          scala-cli test panel/src/Crypto.scala panel/src/Json.scala panel/src/Auth.scala panel/src/Http.scala \
+            panel/test/CryptoTests.test.scala panel/test/PanelTests.test.scala
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: The page
+        working-directory: web
+        run: |
+          npm ci
+          npm test
+          npm run build
+
+  e2e:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, macos-14]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install scalino
+        run: curl -fsSL "https://raw.githubusercontent.com/lolgab/scalino/$SCALINO_VERSION/install.sh" | bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Install clang and the FreeUnit runtime libraries (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y clang libpcre2-dev libssl-dev
+      - name: Install the FreeUnit runtime libraries (macOS)
+        if: runner.os == 'macOS'
+        run: brew install pcre2 openssl@3
+      - name: Build
+        run: |
+          export PATH=$HOME/.local/bin:$PATH
+          scalino package vendor src -o unitship-bin
+      - name: End to end test
+        run: bash e2e.sh "$PWD/unitship-bin"
+
+  systemd:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install scalino
+        run: |
+          sudo apt-get install -y lld
+          curl -fsSL "https://raw.githubusercontent.com/lolgab/scalino/$SCALINO_VERSION/install.sh" | bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Build for Linux
+        run: |
+          export PATH=$HOME/.local/bin:$PATH
+          scalino package vendor src -o unitship-linux \
+            --native-target-triple x86_64-unknown-linux-musl
+      - name: End to end test under systemd
+        run: bash docker-e2e.sh "$PWD/unitship-linux"

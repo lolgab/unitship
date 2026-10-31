@@ -1,0 +1,57 @@
+name: release
+
+# Push a tag `vX.Y.Z` (same as `version` in src/Main.scala) to publish binaries to a GitHub release.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+env:
+  SCALINO_VERSION: v0.0.23
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - {runner: ubuntu-24.04, asset: unitship-linux-x86_64, target: "--native-target-triple x86_64-unknown-linux-musl"}
+          - {runner: macos-14, asset: unitship-macos-arm64, target: ""}
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tag matches version in source
+        run: |
+          v=$(sed -n 's/^private val version = "\(.*\)"/\1/p' src/Main.scala)
+          [ "v$v" = "$GITHUB_REF_NAME" ] || { echo "tag $GITHUB_REF_NAME != version v$v"; exit 1; }
+      - name: Install scalino
+        run: |
+          [ "$RUNNER_OS" = Linux ] && sudo apt-get install -y lld clang
+          curl -fsSL "https://raw.githubusercontent.com/lolgab/scalino/$SCALINO_VERSION/install.sh" | bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Build
+        run: |
+          export PATH=$HOME/.local/bin:$PATH
+          scalino package vendor src -o ${{ matrix.asset }} ${{ matrix.target }}
+          shasum -a 256 ${{ matrix.asset }} > ${{ matrix.asset }}.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: ${{ matrix.asset }}*
+
+  publish:
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true
