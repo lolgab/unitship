@@ -23,7 +23,7 @@ cleanup() {
 trap cleanup EXIT
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
-cp "$BIN" "$dist/unitship"; chmod 755 "$dist/unitship"
+cp "$BIN" "$dist/unitship"; chmod 755 "$dist" "$dist/unitship"
 
 docker build -q -t unitship-acme --build-arg "LEGO_VERSIONS=${versions[*]}" - <<'DOCKERFILE' >/dev/null
 FROM debian:stable-slim

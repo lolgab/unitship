@@ -14,7 +14,7 @@ trap 'docker rm -f "$name" >/dev/null 2>&1 || true; rm -rf "$dist"' EXIT
 
 cp "$BIN" "$dist/unitship"
 cp "$HERE/e2e.sh" "$dist/e2e.sh"
-chmod 755 "$dist/unitship" "$dist/e2e.sh"
+chmod 755 "$dist" "$dist/unitship" "$dist/e2e.sh"   # the user in the container is not the owner
 
 docker build -q -t unitship-e2e - <<'DOCKERFILE' >/dev/null
 FROM debian:stable-slim
