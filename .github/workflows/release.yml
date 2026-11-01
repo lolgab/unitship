@@ -20,7 +20,7 @@ jobs:
           - {runner: macos-14, asset: unitship-macos-arm64, target: ""}
     runs-on: ${{ matrix.runner }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Tag matches version in source
         run: |
           v=$(sed -n 's/^private val version = "\(.*\)"/\1/p' src/Main.scala)
