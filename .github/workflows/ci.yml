@@ -43,7 +43,7 @@ jobs:
           distribution: temurin
           java-version: 17
       - uses: coursier/cache-action@v9
-      - uses: coursier/setup-action@v1
+      - uses: coursier/setup-action@v3
         with:
           apps: scala-cli
       - run: scala-cli test --server=false src/Core.scala test/CoreTests.test.scala
@@ -58,7 +58,7 @@ jobs:
           distribution: temurin
           java-version: 17
       - uses: coursier/cache-action@v9
-      - uses: coursier/setup-action@v1
+      - uses: coursier/setup-action@v3
         with:
           apps: scala-cli
       - name: The pure part of the panel
